@@ -11,6 +11,8 @@
  *   api.gfx      { Surface }
  *   api.ui       widget toolkit { Button, Label, TextField, ListBox, ... }
  *   api.fs       file-io facade
+ *   api.dos      external-program exec facade (sdk/dos.js): resolve(),
+ *                request(), exec(), ExecTracker over DOjS System()
  *   api.events   { SCAN, BTN, keys }
  *   api.theme    look & feel
  *

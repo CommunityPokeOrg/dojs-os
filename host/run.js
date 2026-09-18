@@ -22,6 +22,10 @@ const sandbox = path.join(root, '.dojs-sandbox');
 function seedSandbox() {
 	fs.mkdirSync(path.join(sandbox, 'DOJSOS'), { recursive: true });
 	fs.mkdirSync(path.join(sandbox, 'DOCS'), { recursive: true });
+	fs.mkdirSync(path.join(sandbox, 'BIN'), { recursive: true });
+	/* fake executable for the DOS Prompt demo (never actually run — the
+	 * shim's System() just records the launch) */
+	fs.writeFileSync(path.join(sandbox, 'BIN', 'HELLO.EXE'), 'MZ fake exe');
 	fs.writeFileSync(path.join(sandbox, 'DOCS', 'HELLO.TXT'),
 		'Hello from dojs-os!\r\nThis file lives in the host sandbox.\r\n');
 	fs.writeFileSync(path.join(sandbox, 'DOJSOS', 'NOTES.TXT'), 'todo: ship it\r\n');
@@ -55,8 +59,12 @@ for (let f = 0; f < frames; f++) {
 	if (f === 2) { type('help'); pressEnter(); }
 	if (f === 4) { type('ls'); pressEnter(); }
 	if (f === 6) { type('run calc'); pressEnter(); }
-	if (f === 10) { /* click "1","+","2","=" on the calc (window near 36,30-ish) */
-		const win = kernel.wm.windows[kernel.wm.windows.length - 1];
+	if (f === 7) { kernel.spawn('dosprompt', []); } /* new window takes focus */
+	if (f === 9) { type('cd C:/BIN'); pressEnter(); }
+	if (f === 11) { type('dir'); pressEnter(); }
+	if (f === 13) { type('hello arg1'); pressEnter(); }
+	if (f === 20) { /* click "1","+","2","=" on the calc — last: clicks refocus */
+		const win = kernel.wm.windows.find(w => w.title === 'Calculator');
 		if (win) {
 			const co = { x: win.x + 2, y: win.y + 2 + 14 };
 			/* pad cells: bx=4+c*31, by=24+r*18, cell 29x16 */
@@ -70,6 +78,7 @@ for (let f = 0; f < frames; f++) {
 }
 
 console.log('procs after run:', JSON.stringify(kernel.processList()));
+console.log('System() calls:', JSON.stringify(host.systemCalls));
 console.log('errors:', kernel.errors);
 const texts = host.textLog();
 console.log('--- last 30 text ops on screen ---');

@@ -21,6 +21,7 @@ var appmod = Require('sdk/app');
 var gfxmod = Require('sdk/gfx');
 var uimod = Require('sdk/ui');
 var fsmod = Require('sdk/fs');
+var dosmod = Require('sdk/dos');
 var thememod = Require('os/theme');
 var winmod = Require('sdk/window');
 
@@ -75,6 +76,7 @@ Kernel.prototype.makeApi = function (proc) {
 		gfx: { Surface: gfxmod.Surface },
 		ui: uimod,
 		fs: fsmod,
+		dos: dosmod,
 		events: { SCAN: evmod.SCAN, BTN: evmod.BTN, keys: evmod.keys },
 		theme: thememod.theme,
 		Window: winmod.Window

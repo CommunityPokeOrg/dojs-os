@@ -12,6 +12,7 @@ var kernel = null;
 
 var BUILTIN_APPS = [
 	{ name: 'term',     path: 'apps/term',     title: 'Terminal',     singleton: false },
+	{ name: 'dosprompt', path: 'apps/dosprompt', title: 'DOS Prompt', singleton: false },
 	{ name: 'files',    path: 'apps/files',    title: 'File Manager', singleton: false },
 	{ name: 'editor',   path: 'apps/editor',   title: 'Text Editor',  singleton: false },
 	{ name: 'calc',     path: 'apps/calc',     title: 'Calculator',   singleton: true },

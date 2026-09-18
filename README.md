@@ -19,7 +19,8 @@ Full design notes: [docs/architecture.md](docs/architecture.md)
 - **Apps SDK** (`sdk/`): `Surface` drawing API, typed input events,
   path/file helpers, `Window`, an `App` base class, and basic widgets
   (Label/Button/TextField/ListBox).
-- **Sample apps**: `term` (terminal + shell), `files` (file manager),
+- **Sample apps**: `term` (terminal + shell), `dosprompt` (DOS prompt
+  with real .EXE/.COM/.BAT execution), `files` (file manager),
   `editor` (text editor), `calc` (calculator), `sysinfo` (system info).
 
 ## Quick start — headless (no DOS required)
@@ -67,8 +68,56 @@ exports.create = function (api) { return new MyApp(api); };
 
 Register it in `os/boot.js` `BUILTIN_APPS` (or drop a module anywhere and
 `kernel.spawn` it / `run name` from the terminal). The `api` bundle covers
-windowing, events, rendering, lifecycle, and file I/O — see
+windowing, events, rendering, lifecycle, file I/O, and external program
+execution (`api.dos` — see [sdk/dos.js](sdk/dos.js)) — see
 [sdk/app.js](sdk/app.js) for the full reference.
+
+## DOS Prompt: running real DOS programs
+
+The **DOS Prompt** app (`dosprompt`) is a COMMAND.COM-flavored windowed
+prompt. Built-ins (`dir`, `cd`, `cls`, `echo`, `type`, `ver`, `path`,
+`set`, `history`, `where`, `run`, `exec`, `exit`) run in-process;
+anything else resolves to a `.COM`/`.EXE`/`.BAT` via cwd + `PATH`
+(COMMAND.COM extension order) and launches through DOjS's
+`System(cmd, flags)` — libc `system()`, i.e. `COMMAND.COM /c` on DOS.
+
+```js
+var res = api.dos.exec(api.fs, {
+	program: 'edit', args: ['readme.txt'], cwd: 'C:/'
+});
+// res: {status:'done', code:0, command:'C:/DOS/EDIT.EXE readme.txt', resolved:...}
+// or {status:'notfound'|'badargs'|'unsupported'|'failed', reason:...}
+```
+
+Details and the lifecycle state machine (`idle → launching → running →
+done/failed → idle`, surfaced via `ExecTracker`) are in
+[docs/architecture.md](docs/architecture.md).
+
+### Exec limitations & security notes
+
+- **Blocking/foreground only**: `system()` suspends the whole VM until
+  the child exits; the desktop freezes while a program runs. That's the
+  DOS model — there is no background exec.
+- **Graphics mode stays set**: DOjS has no text-mode switch; text-mode
+  programs write to the VGA text buffer while the card is in graphics
+  mode, so their output is **not visible** on screen during the run.
+  External exec is most useful for non-interactive tools / batch files.
+  The subsystem flags (`dos.FLAGS.{MOUSE,SOUND,JOYSTICK,KEYBOARD,TIMER}`,
+  default `KEYBOARD|TIMER|MOUSE`) de/re-init drivers around the call.
+- **No sandbox**: a launched program is a real DOS process — it can do
+  anything DOS allows (format disks, TSRs, reboot). This is a DOS shell,
+  not a jail. The shim host sandbox only applies to *host-side tests*.
+- **Argument safety**: `dos.quoteArg` rejects `<>|&%`, newlines, and
+  embedded quotes rather than trying to escape them (DOS/COMMAND.COM has
+  no reliable escaping). Resolution and quoting happen before any string
+  reaches `System()`.
+- **Platform gate**: on the Linux DOjS port or without `System()`,
+  `dos.execAvailable()` is false and exec returns
+  `{status:'unsupported'}`; the prompt reports it instead of crashing.
+- **Verifying on DOS**: build `DOJSOS.ZIP`, run under DOSBox-X
+  (`dosbox/README.md`), open DOS Prompt, and try e.g. `C:\DOJS.EXE`-side
+  tools or a small .BAT you place on the mounted drive. `system()` needs
+  `COMMAND.COM` reachable (`COMSPEC`); DOSBox provides it.
 
 ## Constraints & limitations
 

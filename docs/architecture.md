@@ -24,11 +24,16 @@ sdk/
   gfx.js           Surface: drawing API over DOjS primitives
   events.js        EventPump: raw DOjS events -> typed UI events
   fs.js            path + file helpers over DOjS File/List/Stat/...
+  dos.js           external exec facade over DOjS System(): parsing,
+                   quoting, exe resolution (cwd+PATH, COM/EXE/BAT),
+                   launch-request construction, ExecTracker lifecycle
   window.js        Window: per-window offscreen Bitmap + geometry
   app.js           App base class; documents the `api` bundle
   ui.js            widgets: Label, Button, TextField, ListBox, WidgetSet
 apps/
   term.js          terminal + a small shell (ls/cd/cat/run/exit/...)
+  dosprompt.js     DOS Prompt: COMMAND.COM-style prompt that execs real
+                   .EXE/.COM/.BAT via System(); ExecTracker state line
   files.js         file manager (browse, open in editor, mkdir, delete)
   editor.js        text editor (open/save/new, cursor, scroll)
   calc.js          calculator (button pad + expression evaluator)
@@ -79,9 +84,42 @@ onClose(win)     return false to veto closing
 onTick()         per-frame hook (optional)
 ```
 
-`api` bundle: `{wm, kernel, gfx.Surface, ui, fs, events.{SCAN,BTN,keys},
-theme, Window}` — see `sdk/app.js` for the documented shape. `api.fs` is
-the file-I/O surface (`readText/writeText/list/stat/mkdir/rename/remove`).
+`api` bundle: `{wm, kernel, gfx.Surface, ui, fs, dos,
+events.{SCAN,BTN,keys}, theme, Window}` — see `sdk/app.js` for the
+documented shape. `api.fs` is the file-I/O surface
+(`readText/writeText/list/stat/mkdir/rename/remove`); `api.dos` is the
+external-exec surface described next.
+
+## External execution (sdk/dos.js)
+
+DOjS's only exec primitive is `System(cmd, flags)` — libc `system()`,
+which on DOS is `COMMAND.COM /c <cmd>` and returns the child's exit code.
+`flags` is a bitmask of `dos.FLAGS.{MOUSE,SOUND,JOYSTICK,KEYBOARD,TIMER}`
+selecting which Allegro subsystems get de-initialized before and
+re-initialized after the call (default `KEYBOARD|TIMER|MOUSE`, so
+text-mode children get input).
+
+`api.dos` layers on top:
+
+```
+parseLine(line)            -> {argv, error}        quotes-aware splitter
+quoteArg(arg)              -> quoted string | null (rejects <>|&% \n ")
+resolve(fs, name, opts)    -> path | null          cwd, then PATH dirs,
+                             trying .COM/.EXE/.BAT in COMMAND.COM order
+request(fs, spec)          -> {status, command, resolved, flags}
+exec(fs, spec)             -> {status:'done', code,...} | error result
+ExecTracker                -> lifecycle state machine for UIs
+```
+
+Statuses: `ready` (constructed), `done`, `notfound`, `badargs`,
+`unsupported` (no System backend — Linux DOjS port / host without mock),
+`failed` (System threw). `ExecTracker.exec` walks
+`idle -> launching -> running -> done/failed -> idle` and records history,
+so the DOS Prompt app can paint a state line around the blocking call.
+
+The DOS Prompt app's `DosShell` is graphics-free and returns output
+lines ('\x0c' = clear, '\x04' = close), like term's `Shell` — host tests
+drive it directly with a mocked `System()`.
 
 Events are screen coordinates translated to client coordinates before
 delivery — apps only see their own client area.

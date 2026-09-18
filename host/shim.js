@@ -289,7 +289,24 @@ function mapFile(p) {
 	if (abs !== _sandbox && !abs.startsWith(_sandbox + nodePath.sep)) {
 		throw new Error('shim: path escapes sandbox: ' + p);
 	}
-	return abs;
+	/* DOS filesystems are case-insensitive: resolve each component against
+	 * the real directory when the literal case misses. */
+	var rel = nodePath.relative(_sandbox, abs);
+	if (!rel) { return abs; }
+	var cur = _sandbox;
+	var segs = rel.split(nodePath.sep);
+	for (var i = 0; i < segs.length; i++) {
+		var next = nodePath.join(cur, segs[i]);
+		if (!nodeFs.existsSync(next) && nodeFs.existsSync(cur)) {
+			var want = segs[i].toLowerCase();
+			var ents = nodeFs.readdirSync(cur);
+			for (var e = 0; e < ents.length; e++) {
+				if (ents[e].toLowerCase() === want) { next = nodePath.join(cur, ents[e]); break; }
+			}
+		}
+		cur = next;
+	}
+	return cur;
 }
 
 function ShimFile(name, mode) {
@@ -606,7 +623,17 @@ function install(opts) {
 	G.GetLoadedLibraries = function () { return []; };
 	G.LoadModule = function (n) { G.LoadLibrary(n); };
 	G.FlushLog = function () { };
-	G.System = function () { return 0; };
+	/* System(): record calls so tests can assert them; host.systemReturn
+	 * controls the faked exit code. Set global.System = undefined to
+	 * simulate a platform without exec support. */
+	var systemCalls = [];
+	var systemReturn = { code: 0 };
+	G.System = function (cmd, flags) {
+		systemCalls.push({ cmd: cmd, flags: flags });
+		if (systemReturn.throw) { throw new Error(systemReturn.throw); }
+		return systemReturn.code;
+	};
+	G.SYSTEM = { MOUSE: 0x01, SOUND: 0x02, JOYSTICK: 0x04, KEYBOARD: 0x08, TIMER: 0x10 };
 	G.MouseSetSpeed = function () { };
 	G.MouseSetLimits = function () { };
 	G.MouseWarp = function () { };
@@ -652,7 +679,10 @@ function install(opts) {
 			return { x: 0, y: 0, buttons: 0, key: ((scan || 0) << 8) | code, ticks: Date.now() };
 		},
 		saveScreen: function (file) { screen.toPPM(file); },
-		textLog: function () { return screen.textLog.slice(); }
+		textLog: function () { return screen.textLog.slice(); },
+		/* test hooks for DOjS System() (DOS external exec) */
+		systemCalls: systemCalls,
+		systemReturn: systemReturn
 	};
 }
 
