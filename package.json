@@ -1,0 +1,11 @@
+{
+	"name": "dojs-os",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Window manager, desktop environment and app runtime for DOjS (JavaScript on MS-DOS/FreeDOS), with an Apps SDK and sample apps.",
+	"scripts": {
+		"test": "node tests/run-tests.js",
+		"smoke": "node host/run.js --frames 60 --shot dist/dojsos.ppm",
+		"package": "sh tools/build-zip.sh"
+	}
+}
