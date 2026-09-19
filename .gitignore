@@ -1,5 +1,16 @@
 dist/
-vendor/
+# DOjS runtime is vendored, but only the minimal set below is committed;
+# a full release unpacked by tools/get-dojs.sh --full stays untracked.
+vendor/*
+!vendor/dojs/
+vendor/dojs/*
+!vendor/dojs/CWSDPMI.EXE
+!vendor/dojs/JSBOOT.ZIP
+!vendor/dojs/LICENSE
+!vendor/dojs/README.TXT
+!vendor/dojs/SHA256SUMS
+!vendor/dojs/dojs.exe
+!vendor/dojs/dojs.ini
 .dojs-sandbox/
 *.ppm
 node_modules/
