@@ -4,16 +4,17 @@
 JavaScript runtime for MS-DOS/FreeDOS. You need a DOjS binary (`DOJS.EXE`)
 and a packaged `DOJSOS.ZIP`.
 
-## 1. Get DOjS
+## 1. Get DOjS — already done
 
-```sh
-tools/get-dojs.sh            # downloads latest release into vendor/dojs/
-tools/get-dojs.sh v1.12.0    # or pin a version
-```
+The minimal runtime (DOJS.EXE v1.14.0, CWSDPMI.EXE, JSBOOT.ZIP, dojs.ini)
+is committed under `vendor/dojs/` — skip this step.
 
-Or download a release zip manually from
-https://github.com/SuperIlu/DOjS/releases and unpack it into `vendor/dojs/`
-so that `vendor/dojs/DOJS.EXE` exists.
+Optional: `tools/get-dojs.sh` refreshes it (checksum-verified),
+`tools/get-dojs.sh --full` fetches the complete upstream release
+(optional `*.DXE` modules like png/jpeg/sqlite, examples, docs), and
+`tools/get-dojs.sh vX.Y.Z` pins a different version. Verify integrity
+with `cd vendor/dojs && sha256sum -c SHA256SUMS`; provenance is in
+`vendor/dojs/README.TXT`.
 
 ## 2. Package dojs-os
 

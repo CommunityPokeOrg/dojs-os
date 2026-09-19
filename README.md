@@ -33,13 +33,31 @@ node host/run.js --shot out.ppm   # ...and dumps a framebuffer screenshot
 
 ## Quick start — DOSBox-X / real DOS
 
+The minimal DOjS runtime (`DOJS.EXE` v1.14.0 + `CWSDPMI.EXE` +
+`JSBOOT.ZIP`, from the official upstream release) is vendored in
+`vendor/dojs/` — no download needed:
+
 ```sh
-tools/get-dojs.sh           # fetch DOjS release into vendor/dojs/
 tools/build-zip.sh          # package dojs-os -> dist/DOJSOS.ZIP
 dosbox-x -conf dosbox/dosbox-x.conf
 ```
 
-Details and manual DOS instructions: [dosbox/README.md](dosbox/README.md).
+That's it: DOSBox-X mounts `vendor/dojs` as `C:` and `dist` as `D:`,
+then `RUN.BAT` launches `C:\DOJS.EXE -w 640,480 -b 32 -r D:\DOJSOS.ZIP`.
+Try the **DOS Prompt** app from the start menu for a COMMAND.COM-style
+prompt that can `run` real `.EXE`/`.COM`/`.BAT` programs.
+
+To upgrade/replace the vendored runtime or fetch the full upstream
+release (optional `*.DXE` modules, examples, docs):
+
+```sh
+tools/get-dojs.sh           # refresh vendored set, checksum-verified
+tools/get-dojs.sh --full    # everything (stays untracked)
+```
+
+Provenance + checksums: `vendor/dojs/README.TXT` and
+`vendor/dojs/SHA256SUMS`. Details and manual DOS instructions:
+[dosbox/README.md](dosbox/README.md).
 
 ## Writing an app
 
