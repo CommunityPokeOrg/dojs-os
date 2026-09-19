@@ -98,12 +98,23 @@ function testRequireTargetsExistOnDisk(t) {
 }
 
 function testDevLauncherFiles(t) {
-	// Wolfy flow: mount repo root as D:, run RUN.BAT -> unzipped boot.
 	const runbat = fs.readFileSync(path.join(ROOT, 'RUN.BAT'), 'utf8');
 	t.assert(/JSBOOT\.ZIP/i.test(runbat), 'RUN.BAT must ensure JSBOOT.ZIP in CWD');
 	t.assert(/DOJS\.EXE/i.test(runbat) && /MAIN\.JS/i.test(runbat),
 		'RUN.BAT must invoke DOJS.EXE MAIN.JS');
 	t.assert(/-r/i.test(runbat), 'RUN.BAT must pass -r (else DOjS opens the editor)');
+	// layout-agnostic: resolve vendored runtime relative to repo root,
+	// not via a drive-letter assumption (C: may be the repo itself)
+	t.assert(/VENDOR\\DOJS\\DOJS\.EXE/i.test(runbat),
+		'RUN.BAT must use VENDOR\\DOJS\\DOJS.EXE (repo-relative)');
+	t.assert(/VENDOR\\DOJS\\JSBOOT\.ZIP/i.test(runbat),
+		'RUN.BAT must seed JSBOOT.ZIP from VENDOR\\DOJS\\JSBOOT.ZIP');
+	// root discovery: MAIN.JS in CWD, <cwd>\DOJS-OS, or parent dir
+	t.assert(/if exist MAIN\.JS/i.test(runbat), 'RUN.BAT must probe MAIN.JS in CWD');
+	t.assert(/if exist DOJS-OS\\MAIN\.JS/i.test(runbat),
+		'RUN.BAT must probe DOJS-OS\\MAIN.JS (invoked from parent dir)');
+	t.assert(/if exist \.\.\\MAIN\.JS/i.test(runbat),
+		'RUN.BAT must probe ..\\MAIN.JS (invoked from a subdirectory)');
 
 	const conf = fs.readFileSync(path.join(ROOT, 'dosbox', 'dosbox-x-dev.conf'), 'utf8');
 	t.assert(/mount C vendor\/dojs/i.test(conf), 'dev conf must mount vendor/dojs as C:');
@@ -113,6 +124,41 @@ function testDevLauncherFiles(t) {
 		'dev conf needs lfn=true (apps/dosprompt.js > 8.3 chars)');
 }
 
+function testVendoredRuntimeIsTracked(t) {
+	// Wolfy's earlier failure was PATH layout, not a missing file:
+	// vendor/dojs/{dojs.exe,JSBOOT.ZIP,CWSDPMI.EXE} must be committed.
+	for (const f of ['dojs.exe', 'JSBOOT.ZIP', 'CWSDPMI.EXE']) {
+		const p = path.join(ROOT, 'vendor', 'dojs', f);
+		t.assert(fs.existsSync(p), 'missing vendored file ' + f);
+		const tracked = cp.execSync('git ls-files "vendor/dojs/' + f + '"',
+			{ cwd: ROOT, encoding: 'utf8' }).trim();
+		t.assert(tracked.length > 0, f + ' exists but is NOT git-tracked');
+		const ignored = cp.execSync('git check-ignore -v "vendor/dojs/' + f +
+			'" >/dev/null 2>&1; echo $?', { cwd: ROOT, encoding: 'utf8', shell: '/bin/sh' }).trim();
+		t.assert(ignored !== '0', f + ' is gitignored — RUN.BAT cannot rely on it');
+	}
+}
+
+function testLauncherRootResolution(t) {
+	// Mirror RUN.BAT's root discovery order: '.', 'DOJS-OS', '..'.
+	function repoRoot(cwdEntries, cwdParentEntries) {
+		const has = (rel) =>
+			rel === '.' ? cwdEntries.has('MAIN.JS')
+				: rel === 'DOJS-OS' ? cwdEntries.has('DOJS-OS/MAIN.JS')
+				: cwdParentEntries.has('MAIN.JS');
+		for (const c of ['.', 'DOJS-OS', '..']) { if (has(c)) return c; }
+		return null;
+	}
+	// layout a: repo is C:\DOJS-OS, invoked from C:\
+	const parent = new Set(['DOJS-OS/MAIN.JS']);
+	t.eq(repoRoot(parent, new Set()), 'DOJS-OS', 'parent-dir invocation');
+	// invoked from inside the repo (C:\DOJS-OS or D:\)
+	t.eq(repoRoot(new Set(['MAIN.JS']), new Set()), '.', 'in-root invocation');
+	// invoked from a subdirectory like C:\DOJS-OS\DOSBOX
+	t.eq(repoRoot(new Set(), new Set(['MAIN.JS'])), '..', 'subdir invocation');
+	t.eq(repoRoot(new Set(), new Set()), null, 'unrelated dir must fail cleanly');
+}
+
 module.exports = {
 	testZipHasEntryPoint,
 	testZipEmbedsJsboot,
@@ -120,4 +166,6 @@ module.exports = {
 	testDistRunBat,
 	testRequireTargetsExistOnDisk,
 	testDevLauncherFiles,
+	testVendoredRuntimeIsTracked,
+	testLauncherRootResolution,
 };

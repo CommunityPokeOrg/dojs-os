@@ -55,12 +55,14 @@ dosbox-x -conf dosbox/dosbox-x-dev.conf
 ```
 
 This mounts `vendor/dojs` as `C:` and **the repo root itself** as `D:`,
-then runs `D:\RUN.BAT`, which makes `JSBOOT.ZIP` visible in the current
-directory (DOjS needs it to define `Require`) and starts
-`C:\DOJS.EXE -r -w 640,480 -b 32 MAIN.JS` directly from source.
-Edit `.js` files on the host, exit DOjS, and re-run `RUN.BAT` inside
-DOSBox-X — the changes take effect immediately; `DOJSOS.ZIP` is never
-rebuilt.
+then runs `D:\RUN.BAT`. The same `RUN.BAT` also works if the repo (or
+its parent dir) is mounted as `C:` — `mount C /path/to/workspace` →
+`cd DOJS-OS` → `RUN.BAT` — since it resolves `VENDOR\DOJS\DOJS.EXE` /
+`JSBOOT.ZIP` relative to the repo root, not a drive letter. It makes
+`JSBOOT.ZIP` visible in the current directory (DOjS needs it to define
+`Require`) and starts `DOJS.EXE -r -w 640,480 -b 32 MAIN.JS` from
+source. Edit `.js` files on the host, exit DOjS, and re-run `RUN.BAT`
+inside DOSBox-X — no zip rebuild.
 Try the **DOS Prompt** app from the start menu for a COMMAND.COM-style
 prompt that can `run` real `.EXE`/`.COM`/`.BAT` programs.
 

@@ -53,17 +53,41 @@ C:\DOJS.EXE -r -w 640,480 -b 32 DOJSOS.ZIP
 
 ## 3a. Live debugging — unzipped source mount
 
+Two equivalent layouts; `RUN.BAT` (repo root) handles both — it finds
+the repo root via `MAIN.JS` probes (current dir, `DOJS-OS\`, or `..\`)
+and resolves the runtime repo-relatively as `VENDOR\DOJS\DOJS.EXE` /
+`VENDOR\DOJS\JSBOOT.ZIP`. No drive-letter assumptions.
+
+**Layout A — repo (or its parent dir) mounted as `C:`:**
+
+```bat
+mount C /path/to/workspace       rem repo lives at C:\DOJS-OS
+C:
+cd DOJS-OS
+RUN.BAT
+```
+
+(or `mount C /path/to/dojs-os` → `C:` → `RUN.BAT`)
+
+**Layout B — the provided dev config (vendor as `C:`, repo as `D:`):**
+
 ```sh
 dosbox-x -conf dosbox/dosbox-x-dev.conf
 ```
 
-Mounts `vendor/dojs` as `C:` and **the repo root as `D:`**, then calls
-`D:\RUN.BAT`. Running a plain `MAIN.JS` does NOT go through the script
+which mounts `vendor/dojs` as `C:`, the repo root as `D:`, and calls
+`D:\RUN.BAT` automatically.
+
+How it works: running a plain `MAIN.JS` does NOT go through the script
 zip path, so DOjS looks for its stdlib as `JSBOOT.ZIP` (or an unpacked
-`JSBOOT\` dir) **in the current directory** — `RUN.BAT` copies
-`C:\JSBOOT.ZIP` into the repo root on first run (untracked, gitignored).
-`Require('os/boot')` then resolves `D:\OS\BOOT.JS` off the host source
-tree.
+`JSBOOT\` dir) **in the current directory** — `RUN.BAT` copies the
+vendored `VENDOR\DOJS\JSBOOT.ZIP` into the repo root on first run
+(untracked, gitignored). `Require('os/boot')` then resolves
+`<root>\OS\BOOT.JS` off the host source tree.
+
+Note: `vendor/dojs/JSBOOT.ZIP` **is committed** to the repo — an earlier
+failure came from `RUN.BAT` looking only in CWD/`C:\` instead of
+`VENDOR\DOJS\`, i.e. a path-layout bug, not a missing file.
 
 Iterate: edit any `.js` on the host → inside DOSBox-X exit DOjS
 (Start → Shut down, or `exit` in DOS Prompt) → run `RUN.BAT` again.
