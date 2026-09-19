@@ -9,6 +9,19 @@ Everything is plain ES5.1 JavaScript (DOjS embeds MuJS 1.0.5 — `var`,
 functions/template literals). Modules use DOjS's `Require(name)` which
 returns `module.exports`.
 
+`Require` is not native — it is defined by the DOjS standard library
+(`jsboot/func.js`). At startup DOjS loads jsboot from `JSBOOT.ZIP` in
+the current directory, an unpacked `JSBOOT\` dir in the current
+directory, or — when the script itself came from a zip (`-r
+FOO.ZIP` → `FOO.ZIP=MAIN.JS`) — from inside that script zip. If none
+is present the stdlib never loads and the first `Require()` throws
+`ReferenceError: 'Require' is not defined`. Module names then resolve
+as `name(.js)` in the CWD, `<script zip>=JSBOOT/name(.js)`, `JSBOOT/`
+on disk, and `<script zip>=PACKAGE/name.js` — which is why
+`DOJSOS.ZIP` embeds our modules under `jsboot/` and why unzipped runs
+need CWD = repo root with `JSBOOT.ZIP` visible there (see
+`dosbox/README.md`).
+
 ## Layout
 
 ```

@@ -19,12 +19,24 @@ with `cd vendor/dojs && sha256sum -c SHA256SUMS`; provenance is in
 ## 2. Package dojs-os
 
 ```sh
-tools/build-zip.sh           # writes dist/DOJSOS.ZIP
+tools/build-zip.sh           # writes dist/DOJSOS.ZIP + dist/RUN.BAT
 ```
 
-The zip contains `MAIN.JS` at the root plus the `os/`, `sdk/`, `shell/`
-and `apps/` module trees — DOjS resolves `Require('os/boot')` inside the
-zip automatically.
+DOjS loader semantics (verified against DOjS v1.14.0 `src/DOjS.c` and
+`jsboot/func.js`) drive the zip layout:
+
+- `DOJS.EXE -r FOO.ZIP` runs `FOO.ZIP=MAIN.JS` **and** makes `FOO.ZIP`
+  the jsboot archive: the standard library is loaded from
+  `FOO.ZIP=JSBOOT/<name>.js`. A zip without `jsboot/` boots with no
+  `Require`, no `Println`, nothing — `ReferenceError: 'Require' is not
+  defined`. So `DOJSOS.ZIP` embeds the full vendored `JSBOOT.ZIP`
+  contents plus our modules under `jsboot/`:
+  `MAIN.JS`, `jsboot/func.js`, ..., `jsboot/os/boot.js`,
+  `jsboot/sdk/*.js`, `jsboot/shell/*.js`, `jsboot/apps/*.js`.
+- `Require(name)` then tries, in order: `name`/`name.js` in the current
+  directory on disk, `<script zip>=JSBOOT/name(.js)`, an unpacked
+  `JSBOOT/` dir in the current directory, then
+  `<script zip>=PACKAGE/name.js`. Zip entry lookup is case-insensitive.
 
 ## 3. Run in DOSBox-X
 
@@ -36,8 +48,30 @@ The config mounts `vendor/dojs` as `C:` and `dist` as `D:`, then runs
 `RUN.BAT`, which executes:
 
 ```bat
-C:\DOJS.EXE -w 640,480 -b 32 -r D:\DOJSOS.ZIP
+C:\DOJS.EXE -r -w 640,480 -b 32 DOJSOS.ZIP
 ```
+
+## 3a. Live debugging — unzipped source mount
+
+```sh
+dosbox-x -conf dosbox/dosbox-x-dev.conf
+```
+
+Mounts `vendor/dojs` as `C:` and **the repo root as `D:`**, then calls
+`D:\RUN.BAT`. Running a plain `MAIN.JS` does NOT go through the script
+zip path, so DOjS looks for its stdlib as `JSBOOT.ZIP` (or an unpacked
+`JSBOOT\` dir) **in the current directory** — `RUN.BAT` copies
+`C:\JSBOOT.ZIP` into the repo root on first run (untracked, gitignored).
+`Require('os/boot')` then resolves `D:\OS\BOOT.JS` off the host source
+tree.
+
+Iterate: edit any `.js` on the host → inside DOSBox-X exit DOjS
+(Start → Shut down, or `exit` in DOS Prompt) → run `RUN.BAT` again.
+No zip rebuild; files are re-read from the mounted tree each launch.
+
+If you ever see `ReferenceError: 'Require' is not defined`, the current
+directory lacks `JSBOOT.ZIP`/`JSBOOT\` — that is the jsboot-load
+failure, not a code error.
 
 Plain DOSBox works too — adjust `machine`/`vmemsize` as needed, DOjS needs
 VESA for >8bpp modes. On real hardware / FreeDOS, copy the zip next to
