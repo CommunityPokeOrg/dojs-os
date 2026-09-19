@@ -80,6 +80,14 @@ DOjS drives a single-threaded loop: `Setup()` once, `Loop()` per frame,
   its own offscreen `Bitmap` (`Surface` wraps it); the WM draws chrome
   (frame bevel, title bar, close box) then `bitmap.Draw()`s the client
   area. `SetRenderBitmap(bm)` retargets all drawing calls.
+- **Mouse cursor**: DOjS's `MouseShowCursor(true)` makes Allegro erase
+  and redraw a software cursor on the displayed screen around every
+  frame's `Loop()`+blit — the erase/redraw cycle flickers on DOS/VESA.
+  The WM instead leaves the Allegro cursor off (`MouseShowCursor(false)`
+  in `os/boot.js`) and composites an arrow cursor into the back buffer
+  at the last reported pointer position at the end of `render()`. The
+  cursor is part of the frame buffer, so it cannot flicker; input is
+  unaffected because `MouseShowCursor` only controls visibility.
 - **Shell** (`shell/desktop.js`) draws the desktop, taskbar (start
   button, per-window buttons, uptime clock) and the start menu, and
   launches apps via `kernel.spawn`.

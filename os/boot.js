@@ -35,7 +35,10 @@ function boot(opts) {
 	/* hardware/env tweaks */
 	SetFramerate(opts.framerate || 20);
 	SetExitKey(0);                    /* disable ESC-quit; the shell owns exit */
-	MouseShowCursor(true);
+	/* Allegro's cursor is erased/redrawn on screen around each frame's
+	 * Loop()+blit, which flickers. The WM composites a cursor into the
+	 * back buffer instead; input is unaffected by this flag. */
+	MouseShowCursor(false);
 
 	kernel.boot();
 

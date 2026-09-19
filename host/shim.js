@@ -421,6 +421,7 @@ function install(opts) {
 	var logLines = [];
 	var stopped = false;
 	var framerate = 30;
+	var mouseCursorShown = null;
 	var exitKey = 59;
 
 	function currentTargetImpl() { return target; }
@@ -637,7 +638,7 @@ function install(opts) {
 	G.MouseSetSpeed = function () { };
 	G.MouseSetLimits = function () { };
 	G.MouseWarp = function () { };
-	G.MouseShowCursor = function () { };
+	G.MouseShowCursor = function (b) { mouseCursorShown = !!b; };
 	G.MouseSetCursorMode = function () { };
 	G.ToUTF8 = function (s) { return s; };
 	G.FromUTF8 = function (s) { return s; };
@@ -682,7 +683,9 @@ function install(opts) {
 		textLog: function () { return screen.textLog.slice(); },
 		/* test hooks for DOjS System() (DOS external exec) */
 		systemCalls: systemCalls,
-		systemReturn: systemReturn
+		systemReturn: systemReturn,
+		/* last argument passed to MouseShowCursor(), or null */
+		mouseCursorShown: function () { return mouseCursorShown; }
 	};
 }
 

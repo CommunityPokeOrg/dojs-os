@@ -180,3 +180,36 @@ exports.testCalcButtonClick = function (t) {
 	const app = k.procs[0].app;
 	t.eq(app.expr, '3', '1+2=3');
 };
+
+/* MouseShowCursor() only toggles DOjS's per-frame Allegro cursor
+ * erase/redraw (visible flicker); the WM composites its own cursor into
+ * the back buffer instead. Verify boot hides the Allegro cursor and the
+ * composited cursor tracks the pointer on the framebuffer. */
+
+exports.testBootHidesAllegroCursor = function (t) {
+	const bootmod = Require('os/boot');
+	bootmod.boot({ autostart: false });
+	t.eq(global.__host.mouseCursorShown(), false, 'Allegro cursor must be off');
+};
+
+exports.testCursorCompositedAtPointer = function (t) {
+	const thememod = Require('os/theme');
+	const k = makeOs();
+	feed(k, mraw(120, 90, 0)); pump(k);
+	k.tick();
+	const scr = global.__host.screen;
+	/* cursor pattern row0col0 = '#', row3col1 = 'o' */
+	t.eq(scr.get(120, 90), thememod.theme.cursorOutline, 'hotspot outline');
+	t.eq(scr.get(121, 93), thememod.theme.cursorFill, 'fill pixel');
+};
+
+exports.testCursorTracksPointer = function (t) {
+	const thememod = Require('os/theme');
+	const k = makeOs();
+	feed(k, mraw(120, 90, 0)); pump(k); k.tick();
+	feed(k, mraw(200, 150, 0)); pump(k); k.tick();
+	const scr = global.__host.screen;
+	t.eq(scr.get(200, 150), thememod.theme.cursorOutline, 'cursor moved');
+	t.assert(scr.get(120, 90) !== thememod.theme.cursorOutline,
+		'old position repainted');
+};

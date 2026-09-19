@@ -35,6 +35,10 @@ var theme = {
 	menuHover: Color(0, 0, 128, 255),
 	menuText: Color(0, 0, 0, 255),
 
+	/* pointer (composited by the WM, see os/wm.js) */
+	cursorOutline: Color(0, 0, 0, 255),
+	cursorFill: Color(255, 255, 255, 255),
+
 	/* metrics (px) */
 	titleH: 14,
 	borderW: 2,

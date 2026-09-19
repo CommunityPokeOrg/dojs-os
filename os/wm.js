@@ -26,6 +26,34 @@ var winmod = Require('sdk/window');
 var SCAN = evmod.SCAN;
 var BTN = evmod.BTN;
 
+/*
+ * Arrow cursor composited into the frame buffer. DOjS only offers
+ * MouseShowCursor(), which makes Allegro erase and redraw a software
+ * cursor on the displayed screen around every frame's Loop()+blit —
+ * that erase/redraw cycle is visible as cursor flicker on DOS/VESA.
+ * Painting the cursor into the back buffer each frame avoids it.
+ * '#': outline, 'o': fill. Hotspot is (0,0).
+ */
+var CURSOR_PATTERN = [
+	'#...........',
+	'##..........',
+	'#o#.........',
+	'#oo#........',
+	'#ooo#.......',
+	'#oooo#......',
+	'#ooooo#.....',
+	'#oooooo#....',
+	'#ooooooo#...',
+	'#oooooooo#..',
+	'#ooooooooo#.',
+	'#oooooo#####',
+	'#oo#oo#.....',
+	'#o#.#oo#....',
+	'##..#oo#....',
+	'#...#oo#....',
+	'....####....'
+];
+
 function WindowManager(kernel) {
 	this.kernel = kernel;
 	this.theme = thememod.theme;
@@ -35,6 +63,9 @@ function WindowManager(kernel) {
 	this.drag = null;         // {win, dx, dy}
 	this.closeHovers = null;
 	this._cascade = 0;
+	this.mouseX = -1;         // last reported pointer position
+	this.mouseY = -1;
+	this.cursorVisible = true;
 }
 
 /* --- window ops -------------------------------------------------------- */
@@ -120,6 +151,12 @@ WindowManager.prototype.zoneAt = function (win, x, y) {
 WindowManager.prototype.dispatch = function (ev) {
 	var t = this.theme;
 	var taskbarY = SizeY() - t.taskbarH;
+
+	/* every DOjS input event carries x/y; remember it for the cursor */
+	if (ev.x !== undefined) {
+		this.mouseX = ev.x | 0;
+		this.mouseY = ev.y | 0;
+	}
 
 	/* shell gets first shot at events inside its layers (taskbar, menus) */
 	if (this.kernel.shell && this.kernel.shell.handleEvent(ev)) {
@@ -240,6 +277,28 @@ WindowManager.prototype.render = function () {
 
 	if (this.kernel.shell) {
 		this.kernel.shell.drawTaskbar(g, t);
+	}
+
+	if (this.cursorVisible) {
+		this._drawCursor(g, t);
+	}
+};
+
+WindowManager.prototype._drawCursor = function (g, t) {
+	if (this.mouseX < 0) {
+		this.mouseX = (SizeX() / 2) | 0;
+		this.mouseY = (SizeY() / 2) | 0;
+	}
+	for (var ry = 0; ry < CURSOR_PATTERN.length; ry++) {
+		var row = CURSOR_PATTERN[ry];
+		for (var rx = 0; rx < row.length; rx++) {
+			var ch = row.charAt(rx);
+			if (ch === '#') {
+				g.pixel(this.mouseX + rx, this.mouseY + ry, t.cursorOutline);
+			} else if (ch === 'o') {
+				g.pixel(this.mouseX + rx, this.mouseY + ry, t.cursorFill);
+			}
+		}
 	}
 };
 
