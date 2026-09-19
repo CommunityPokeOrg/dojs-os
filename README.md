@@ -42,6 +42,20 @@ tools/build-zip.sh          # package dojs-os -> dist/DOJSOS.ZIP (+ RUN.BAT)
 dosbox-x -conf dosbox/dosbox-x.conf
 ```
 
+### VS Code extension
+
+`tools/vscode-dojs/` ships a ready-to-install extension that launches /
+restarts / stops DOSBox-X and streams its logs (plus `JSLOG.TXT`) into an
+Output channel:
+
+```sh
+code --install-extension tools/vscode-dojs/dist/dojs-os-dosbox-0.1.0.vsix
+```
+
+Then open this repo in VS Code and run **“DOjS: Launch in DOSBox-X”** —
+dev mode mounts the live source tree, so host edits + restart = instant
+iterate. Modes/settings: [tools/vscode-dojs/README.md](tools/vscode-dojs/README.md).
+
 That's it: DOSBox-X mounts `vendor/dojs` as `C:` and `dist` as `D:`,
 then `D:\RUN.BAT` launches `C:\DOJS.EXE -r -w 640,480 -b 32 DOJSOS.ZIP`.
 The packaged zip embeds the DOjS standard library (`jsboot/`), which is

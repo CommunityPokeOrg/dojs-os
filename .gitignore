@@ -1,4 +1,4 @@
-dist/
+/dist/
 # DOjS runtime is vendored, but only the minimal set below is committed;
 # a full release unpacked by tools/get-dojs.sh --full stays untracked.
 vendor/*

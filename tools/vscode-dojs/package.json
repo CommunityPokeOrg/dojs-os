@@ -1,0 +1,100 @@
+{
+	"name": "dojs-os-dosbox",
+	"displayName": "DOjS OS — DOSBox-X Runner",
+	"description": "Launch, restart and stop dojs-os under DOSBox-X from VS Code, with DOSBox-X/DOjS logs streamed to an Output channel.",
+	"version": "0.1.0",
+	"publisher": "communitypoke",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.75.0"
+	},
+	"categories": [
+		"Debuggers",
+		"Other"
+	],
+	"keywords": [
+		"dojs",
+		"dos",
+		"dosbox",
+		"dosbox-x"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/CommunityPokeOrg/dojs-os",
+		"directory": "tools/vscode-dojs"
+	},
+	"main": "./extension.js",
+	"activationEvents": [],
+	"contributes": {
+		"commands": [
+			{
+				"command": "dojs.launch",
+				"title": "DOjS: Launch in DOSBox-X",
+				"category": "DOjS"
+			},
+			{
+				"command": "dojs.restart",
+				"title": "DOjS: Restart in DOSBox-X",
+				"category": "DOjS"
+			},
+			{
+				"command": "dojs.stop",
+				"title": "DOjS: Stop DOSBox-X",
+				"category": "DOjS"
+			}
+		],
+		"configuration": {
+			"title": "DOjS OS",
+			"properties": {
+				"dojs.dosboxXPath": {
+					"type": "string",
+					"default": "dosbox-x",
+					"description": "Path to the DOSBox-X executable (or just 'dosbox-x' if it is on PATH)."
+				},
+				"dojs.mode": {
+					"type": "string",
+					"enum": [
+						"dev",
+						"packaged"
+					],
+					"default": "dev",
+					"description": "dev: mount the source tree (edit .js on host, re-run — no zip). packaged: run dist/DOJSOS.ZIP (tools/build-zip.sh runs first)."
+				},
+				"dojs.target": {
+					"type": "string",
+					"enum": [
+						"runbat",
+						"mainjs"
+					],
+					"default": "runbat",
+					"description": "dev mode only: run RUN.BAT (seeds JSBOOT.ZIP, then MAIN.JS) or invoke DOJS.EXE on MAIN.JS directly."
+				},
+				"dojs.configPath": {
+					"type": "string",
+					"default": "",
+					"description": "Optional: use this DOSBox-X .conf file verbatim instead of a generated one (e.g. dosbox/dosbox-x-dev.conf)."
+				},
+				"dojs.extraArgs": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "Extra command-line arguments appended to the dosbox-x invocation."
+				},
+				"dojs.autoBuildZip": {
+					"type": "boolean",
+					"default": true,
+					"description": "Packaged mode: run tools/build-zip.sh before launching so DOJSOS.ZIP is fresh."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"test": "node --test test/*.test.js",
+		"package": "vsce package --out dist/"
+	},
+	"devDependencies": {
+		"@vscode/vsce": "^4.0.0"
+	}
+}
