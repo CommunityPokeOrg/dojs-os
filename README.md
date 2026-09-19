@@ -38,12 +38,29 @@ The minimal DOjS runtime (`DOJS.EXE` v1.14.0 + `CWSDPMI.EXE` +
 `vendor/dojs/` — no download needed:
 
 ```sh
-tools/build-zip.sh          # package dojs-os -> dist/DOJSOS.ZIP
+tools/build-zip.sh          # package dojs-os -> dist/DOJSOS.ZIP (+ RUN.BAT)
 dosbox-x -conf dosbox/dosbox-x.conf
 ```
 
 That's it: DOSBox-X mounts `vendor/dojs` as `C:` and `dist` as `D:`,
-then `RUN.BAT` launches `C:\DOJS.EXE -w 640,480 -b 32 -r D:\DOJSOS.ZIP`.
+then `D:\RUN.BAT` launches `C:\DOJS.EXE -r -w 640,480 -b 32 DOJSOS.ZIP`.
+The packaged zip embeds the DOjS standard library (`jsboot/`), which is
+required — DOjS loads `Require()` and friends from inside the zip it
+was started with.
+
+### Live debugging — unzipped source, no rebuild
+
+```sh
+dosbox-x -conf dosbox/dosbox-x-dev.conf
+```
+
+This mounts `vendor/dojs` as `C:` and **the repo root itself** as `D:`,
+then runs `D:\RUN.BAT`, which makes `JSBOOT.ZIP` visible in the current
+directory (DOjS needs it to define `Require`) and starts
+`C:\DOJS.EXE -r -w 640,480 -b 32 MAIN.JS` directly from source.
+Edit `.js` files on the host, exit DOjS, and re-run `RUN.BAT` inside
+DOSBox-X — the changes take effect immediately; `DOJSOS.ZIP` is never
+rebuilt.
 Try the **DOS Prompt** app from the start menu for a COMMAND.COM-style
 prompt that can `run` real `.EXE`/`.COM`/`.BAT` programs.
 

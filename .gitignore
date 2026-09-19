@@ -15,3 +15,6 @@ vendor/dojs/*
 *.ppm
 node_modules/
 JSLOG.TXT
+# unzipped-debug runtime bits dropped into the repo root by RUN.BAT
+/JSBOOT.ZIP
+/JSBOOT/
